@@ -66,21 +66,21 @@ Scope assumptions locked in:
 ## Part 4: Dummy Sign-In Flow
 
 ### Checklist
-- [ ] Add backend auth endpoint validating `user` / `password`.
-- [ ] Add simple session mechanism for MVP (cookie-based).
-- [ ] Protect Kanban page/data behind authenticated session.
-- [ ] Add logout endpoint and UI logout action.
-- [ ] Add login UI state in frontend (before board render).
+- [x] Add backend auth endpoint validating `user` / `password`.
+- [x] Add simple session mechanism for MVP (cookie-based).
+- [x] Protect Kanban page/data behind authenticated session.
+- [x] Add logout endpoint and UI logout action.
+- [x] Add login UI state in frontend (before board render).
 
 ### Tests
-- [ ] Backend auth tests for valid/invalid credentials.
-- [ ] Frontend unit tests for login form behavior and error states.
-- [ ] Integration/e2e: unauthenticated user sees login, authenticated sees board, logout returns to login.
+- [x] Backend auth tests for valid/invalid credentials.
+- [x] Frontend unit tests for login form behavior and error states.
+- [x] Integration/e2e: unauthenticated user sees login, authenticated sees board, logout returns to login.
 
 ### Success criteria
-- [ ] Only valid credentials unlock board.
-- [ ] Session persists across page refresh during runtime.
-- [ ] Logout fully clears authenticated state.
+- [x] Only valid credentials unlock board.
+- [x] Session persists across page refresh during runtime.
+- [x] Logout fully clears authenticated state.
 
 ## Part 5: Database Modeling (JSON Blob per User)
 

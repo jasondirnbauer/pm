@@ -5,6 +5,7 @@
 This backend currently provides Part 3 behavior:
 - FastAPI application with a modular router structure.
 - API smoke endpoints under `/api`.
+- Cookie-session auth endpoints under `/api/auth`.
 - Exported Next.js frontend served from `/`.
 - Fallback static smoke page for non-container local resilience.
 
@@ -16,6 +17,9 @@ This backend currently provides Part 3 behavior:
 - `app/routers/`
 	- API route modules.
 	- Current endpoints:
+		- `POST /api/auth/login`
+		- `GET /api/auth/me`
+		- `POST /api/auth/logout`
 		- `GET /api/health`
 		- `GET /api/hello`
 - `app/frontend_static/` (container runtime)
@@ -23,7 +27,7 @@ This backend currently provides Part 3 behavior:
 - `app/static/index.html`
 	- Kept as fallback smoke page when exported frontend is not present.
 - `tests/test_smoke.py`
-	- FastAPI TestClient smoke tests for root and API endpoints.
+	- FastAPI TestClient smoke tests for root, auth, and API endpoints.
 
 ## Dependency management
 

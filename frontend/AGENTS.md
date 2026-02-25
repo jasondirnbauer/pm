@@ -33,7 +33,7 @@ This document describes the current frontend implementation in `frontend/`.
 - `src/app/layout.tsx`
   - Global layout, metadata, and font setup (`Space_Grotesk`, `Manrope`).
 - `src/app/page.tsx`
-  - Home page renders `KanbanBoard` only.
+  - Home page renders `AuthGate`.
 - `src/app/globals.css`
   - Defines project color tokens and visual primitives.
 
@@ -53,6 +53,13 @@ This document describes the current frontend implementation in `frontend/`.
   - Generates local IDs for new cards.
 
 ## Components
+
+- `src/components/AuthGate.tsx`
+  - Checks session on initial load via `/api/auth/me`.
+  - Shows login form for unauthenticated users.
+  - Logs in using `/api/auth/login` with fixed credentials.
+  - Provides logout action via `/api/auth/logout`.
+  - Renders `KanbanBoard` only for authenticated users.
 
 - `src/components/KanbanBoard.tsx`
   - Main board container and state owner.
@@ -85,6 +92,10 @@ This document describes the current frontend implementation in `frontend/`.
 ## Testing Coverage
 
 - Unit/component:
+  - `src/components/AuthGate.test.tsx`
+    - Shows sign-in form when unauthenticated.
+    - Signs in and renders board.
+    - Shows invalid-credentials error.
   - `src/lib/kanban.test.ts`
     - Reorder in same column.
     - Move between columns.
@@ -96,15 +107,16 @@ This document describes the current frontend implementation in `frontend/`.
 
 - E2E:
   - `tests/kanban.spec.ts`
-    - Board loads at `/` with heading and 5 columns.
+    - Login flow renders board.
     - Add card flow works.
     - Drag/drop card between columns works.
+    - Logout returns to sign-in.
 
 ## Current Limitations
 
-- No authentication.
-- No backend integration.
-- No persistence (refresh resets to `initialData`).
+- Auth is MVP-only (hardcoded credentials).
+- Board state is still local/in-memory once logged in.
+- No backend board persistence yet.
 - No AI chat UI yet.
 
 ## Constraints for Upcoming Work
