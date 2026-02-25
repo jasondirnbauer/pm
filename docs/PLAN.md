@@ -171,20 +171,20 @@ Scope assumptions locked in:
 ## Part 10: Frontend AI Sidebar
 
 ### Checklist
-- [ ] Add sidebar chat UI with message history and input.
-- [ ] Wire chat UI to backend AI endpoint.
-- [ ] Apply returned board updates to UI immediately after successful response.
-- [ ] Keep UX simple and aligned with existing design tokens/colors.
+- [x] Add sidebar chat UI with message history and input.
+- [x] Wire chat UI to backend AI endpoint.
+- [x] Apply returned board updates to UI immediately after successful response.
+- [x] Keep UX simple and aligned with existing design tokens/colors.
 
 ### Tests
-- [ ] Component tests for chat rendering, submit, loading, and error states.
-- [ ] Integration tests for board refresh after AI update.
-- [ ] E2E test: user sends message, receives reply, board updates when instructed.
+- [x] Component tests for chat rendering, submit, loading, and error states.
+- [x] Integration tests for board refresh after AI update.
+- [x] E2E test: user sends message, receives reply, board updates when instructed.
 
 ### Success criteria
-- [ ] Sidebar supports full roundtrip chat.
-- [ ] Valid AI-issued updates are reflected without manual reload.
-- [ ] Existing Kanban interactions continue to work.
+- [x] Sidebar supports full roundtrip chat.
+- [x] Valid AI-issued updates are reflected without manual reload.
+- [x] Existing Kanban interactions continue to work.
 
 ## Cross-cutting Definition of Done
 
