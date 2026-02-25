@@ -43,4 +43,26 @@ describe("KanbanBoard", () => {
 
     expect(within(column).queryByText("New card")).not.toBeInTheDocument();
   });
+
+  it("edits a card title and details", async () => {
+    render(<KanbanBoard />);
+    const card = screen.getByTestId("card-card-1");
+
+    await userEvent.click(
+      within(card).getByRole("button", { name: /edit align roadmap themes/i })
+    );
+
+    const titleInput = within(card).getByLabelText("Card title");
+    await userEvent.clear(titleInput);
+    await userEvent.type(titleInput, "Updated roadmap theme");
+
+    const detailsInput = within(card).getByLabelText("Card details");
+    await userEvent.clear(detailsInput);
+    await userEvent.type(detailsInput, "Updated details.");
+
+    await userEvent.click(within(card).getByRole("button", { name: /save/i }));
+
+    expect(screen.getByText("Updated roadmap theme")).toBeInTheDocument();
+    expect(screen.getByText("Updated details.")).toBeInTheDocument();
+  });
 });

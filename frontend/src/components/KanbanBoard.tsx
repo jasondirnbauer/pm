@@ -89,6 +89,20 @@ export const KanbanBoard = () => {
     });
   };
 
+  const handleUpdateCard = (cardId: string, title: string, details: string) => {
+    setBoard((prev) => ({
+      ...prev,
+      cards: {
+        ...prev.cards,
+        [cardId]: {
+          ...prev.cards[cardId],
+          title: title.trim() || prev.cards[cardId].title,
+          details: details.trim() || "No details yet.",
+        },
+      },
+    }));
+  };
+
   const activeCard = activeCardId ? cardsById[activeCardId] : null;
 
   return (
@@ -148,6 +162,7 @@ export const KanbanBoard = () => {
                 onRename={handleRenameColumn}
                 onAddCard={handleAddCard}
                 onDeleteCard={handleDeleteCard}
+                onUpdateCard={handleUpdateCard}
               />
             ))}
           </section>
