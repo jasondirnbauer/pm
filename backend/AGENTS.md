@@ -7,6 +7,7 @@ This backend currently provides Part 6 behavior:
 - API smoke endpoints under `/api`.
 - Cookie-session auth endpoints under `/api/auth`.
 - SQLite-backed board persistence via `/api/board`.
+- OpenRouter connectivity endpoint via `/api/ai/connectivity`.
 - Exported Next.js frontend served from `/`.
 - Fallback static smoke page for non-container local resilience.
 
@@ -20,6 +21,9 @@ This backend currently provides Part 6 behavior:
 	- DB path resolution (`PM_DB_PATH` override support).
 	- SQLite schema initialization.
 	- Per-user board read/create and update helpers.
+- `app/ai_client.py`
+	- OpenRouter client wrapper for model `openai/gpt-oss-120b`.
+	- Handles configuration, timeout, and upstream error mapping.
 - `app/board_defaults.py`
 	- Default board payload used for first-time user initialization.
 - `app/routers/`
@@ -30,6 +34,7 @@ This backend currently provides Part 6 behavior:
 		- `POST /api/auth/logout`
 		- `GET /api/board`
 		- `PUT /api/board`
+		- `POST /api/ai/connectivity`
 		- `GET /api/health`
 		- `GET /api/hello`
 - `app/frontend_static/` (container runtime)

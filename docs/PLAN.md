@@ -137,15 +137,15 @@ Scope assumptions locked in:
 ## Part 8: AI Connectivity (OpenRouter)
 
 ### Checklist
-- [ ] Add backend AI client using OpenRouter with `.env` key.
-- [ ] Use model `openai/gpt-oss-120b`.
-- [ ] Implement simple diagnostic call path for connectivity checks.
-- [ ] Add robust timeout and error mapping for upstream failures.
+- [x] Add backend AI client using OpenRouter with `.env` key.
+- [x] Use model `openai/gpt-oss-120b`.
+- [x] Implement simple diagnostic call path for connectivity checks.
+- [x] Add robust timeout and error mapping for upstream failures.
 
 ### Tests
 - [ ] Connectivity test prompt `2+2` returns expected semantic result.
-- [ ] Missing/invalid API key path returns clear backend error.
-- [ ] Network failure path is handled gracefully.
+- [x] Missing/invalid API key path returns clear backend error.
+- [x] Network failure path is handled gracefully.
 
 ### Success criteria
 - [ ] Backend can successfully call OpenRouter in local container runtime.

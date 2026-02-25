@@ -1,6 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app.ai_client import OpenRouterConfigurationError
+from app.ai_client import OpenRouterRequestError
+from app.ai_client import OpenRouterTimeoutError
 from app.main import create_app
 from app.routers.auth import sessions
 
@@ -167,3 +170,74 @@ def test_board_persists_across_app_instances() -> None:
         )
         second_board = second_client.get("/api/board").json()
         assert second_board["cards"]["card-2"]["title"] == "Persisted value"
+
+
+def test_ai_connectivity_requires_authentication() -> None:
+    with TestClient(create_app()) as client:
+        response = client.post("/api/ai/connectivity", json={"prompt": "2+2"})
+        assert response.status_code == 401
+
+
+def test_ai_connectivity_success(monkeypatch) -> None:
+    monkeypatch.setattr("app.routers.ai.query_openrouter", lambda prompt: "4")
+
+    with TestClient(create_app()) as client:
+        client.post(
+            "/api/auth/login",
+            json={"username": "user", "password": "password"},
+        )
+
+        response = client.post("/api/ai/connectivity", json={"prompt": "2+2"})
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["prompt"] == "2+2"
+        assert payload["response"] == "4"
+        assert payload["model"] == "openai/gpt-oss-120b"
+
+
+def test_ai_connectivity_missing_key_returns_error(monkeypatch) -> None:
+    def raise_missing_key(_: str) -> str:
+        raise OpenRouterConfigurationError("OPENROUTER_API_KEY is not configured")
+
+    monkeypatch.setattr("app.routers.ai.query_openrouter", raise_missing_key)
+
+    with TestClient(create_app()) as client:
+        client.post(
+            "/api/auth/login",
+            json={"username": "user", "password": "password"},
+        )
+
+        response = client.post("/api/ai/connectivity", json={"prompt": "2+2"})
+        assert response.status_code == 500
+
+
+def test_ai_connectivity_timeout_returns_504(monkeypatch) -> None:
+    def raise_timeout(_: str) -> str:
+        raise OpenRouterTimeoutError("OpenRouter request timed out")
+
+    monkeypatch.setattr("app.routers.ai.query_openrouter", raise_timeout)
+
+    with TestClient(create_app()) as client:
+        client.post(
+            "/api/auth/login",
+            json={"username": "user", "password": "password"},
+        )
+
+        response = client.post("/api/ai/connectivity", json={"prompt": "2+2"})
+        assert response.status_code == 504
+
+
+def test_ai_connectivity_request_error_returns_502(monkeypatch) -> None:
+    def raise_request_error(_: str) -> str:
+        raise OpenRouterRequestError("upstream error")
+
+    monkeypatch.setattr("app.routers.ai.query_openrouter", raise_request_error)
+
+    with TestClient(create_app()) as client:
+        client.post(
+            "/api/auth/login",
+            json={"username": "user", "password": "password"},
+        )
+
+        response = client.post("/api/ai/connectivity", json={"prompt": "2+2"})
+        assert response.status_code == 502
