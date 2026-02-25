@@ -24,6 +24,17 @@ def get_session_user(request: Request) -> str | None:
     return sessions.get(session_token)
 
 
+def require_authenticated_user(request: Request) -> str:
+    username = get_session_user(request)
+    if not username:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+
+    return username
+
+
 @router.post("/login")
 def login(payload: LoginRequest, response: Response) -> dict[str, str]:
     if payload.username != VALID_USERNAME or payload.password != VALID_PASSWORD:
@@ -58,11 +69,5 @@ def logout(request: Request, response: Response) -> dict[str, str]:
 
 @router.get("/me")
 def me(request: Request) -> dict[str, str]:
-    username = get_session_user(request)
-    if not username:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-        )
-
+    username = require_authenticated_user(request)
     return {"username": username}

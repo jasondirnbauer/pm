@@ -89,33 +89,33 @@ Scope assumptions locked in:
 - [x] Document schema, migration/bootstrapping approach, and tradeoffs in `docs/`.
 - [x] Define default-board initialization logic for first login/use.
 - [x] Define constraints and indexes for lookup by username.
-- [ ] Obtain user sign-off before backend persistence implementation.
+- [x] Obtain user sign-off before backend persistence implementation.
 
 ### Tests
 - [x] Schema doc review checklist complete.
-- [ ] Local DB initialization creates tables if missing.
-- [ ] Insert/read roundtrip validates JSON fidelity.
+- [x] Local DB initialization creates tables if missing.
+- [x] Insert/read roundtrip validates JSON fidelity.
 
 ### Success criteria
 - [x] Schema is simple, explicit, and aligned to MVP requirements.
-- [ ] Database behavior is documented and approved before coding Part 6.
+- [x] Database behavior is documented and approved before coding Part 6.
 
 ## Part 6: Backend Kanban API
 
 ### Checklist
-- [ ] Implement DB layer and startup init to create DB/tables if absent.
-- [ ] Add endpoints to read board and update board for authenticated user.
-- [ ] Validate request payload shape and reject malformed board updates.
-- [ ] Keep API surface minimal and versionable.
+- [x] Implement DB layer and startup init to create DB/tables if absent.
+- [x] Add endpoints to read board and update board for authenticated user.
+- [x] Validate request payload shape and reject malformed board updates.
+- [x] Keep API surface minimal and versionable.
 
 ### Tests
-- [ ] Backend unit tests for DB init and CRUD operations.
-- [ ] API tests for auth-required access, read success, update success, and invalid payload rejection.
-- [ ] Persistence test verifying updates survive server restart.
+- [x] Backend unit tests for DB init and CRUD operations.
+- [x] API tests for auth-required access, read success, update success, and invalid payload rejection.
+- [x] Persistence test verifying updates survive server restart.
 
 ### Success criteria
-- [ ] Backend is source of truth for board state.
-- [ ] Board updates are persisted per user in SQLite JSON blob.
+- [x] Backend is source of truth for board state.
+- [x] Board updates are persisted per user in SQLite JSON blob.
 
 ## Part 7: Frontend + Backend Integration
 
@@ -197,4 +197,4 @@ For each completed part:
 ## Approval Gates
 
 - [x] Gate A (required): Approve this plan before Part 2 starts.
-- [ ] Gate B (required): Approve database approach docs before Part 6 starts.
+- [x] Gate B (required): Approve database approach docs before Part 6 starts.

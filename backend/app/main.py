@@ -3,11 +3,13 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app.db import init_db
 from app.routers import api_router
 
 
 def create_app() -> FastAPI:
     application = FastAPI(title="Project Management MVP")
+    init_db()
     application.include_router(api_router, prefix="/api")
 
     app_dir = Path(__file__).parent
