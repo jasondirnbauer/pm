@@ -85,19 +85,19 @@ Scope assumptions locked in:
 ## Part 5: Database Modeling (JSON Blob per User)
 
 ### Checklist
-- [ ] Propose SQLite schema with one board JSON blob per user.
-- [ ] Document schema, migration/bootstrapping approach, and tradeoffs in `docs/`.
-- [ ] Define default-board initialization logic for first login/use.
-- [ ] Define constraints and indexes for lookup by username.
+- [x] Propose SQLite schema with one board JSON blob per user.
+- [x] Document schema, migration/bootstrapping approach, and tradeoffs in `docs/`.
+- [x] Define default-board initialization logic for first login/use.
+- [x] Define constraints and indexes for lookup by username.
 - [ ] Obtain user sign-off before backend persistence implementation.
 
 ### Tests
-- [ ] Schema doc review checklist complete.
+- [x] Schema doc review checklist complete.
 - [ ] Local DB initialization creates tables if missing.
 - [ ] Insert/read roundtrip validates JSON fidelity.
 
 ### Success criteria
-- [ ] Schema is simple, explicit, and aligned to MVP requirements.
+- [x] Schema is simple, explicit, and aligned to MVP requirements.
 - [ ] Database behavior is documented and approved before coding Part 6.
 
 ## Part 6: Backend Kanban API
