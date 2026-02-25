@@ -143,30 +143,30 @@ Scope assumptions locked in:
 - [x] Add robust timeout and error mapping for upstream failures.
 
 ### Tests
-- [ ] Connectivity test prompt `2+2` returns expected semantic result.
+- [x] Connectivity test prompt `2+2` returns expected semantic result.
 - [x] Missing/invalid API key path returns clear backend error.
 - [x] Network failure path is handled gracefully.
 
 ### Success criteria
-- [ ] Backend can successfully call OpenRouter in local container runtime.
-- [ ] Error paths are deterministic and debuggable.
+- [x] Backend can successfully call OpenRouter in local container runtime.
+- [x] Error paths are deterministic and debuggable.
 
 ## Part 9: Structured AI Board Actions
 
 ### Checklist
-- [ ] Define strict structured output schema (assistant reply + optional board update).
-- [ ] Send board JSON + user question + conversation history to backend AI endpoint.
-- [ ] Validate AI structured output before applying any board mutation.
-- [ ] Persist approved board updates and return updated state.
+- [x] Define strict structured output schema (assistant reply + optional board update).
+- [x] Send board JSON + user question + conversation history to backend AI endpoint.
+- [x] Validate AI structured output before applying any board mutation.
+- [x] Persist approved board updates and return updated state.
 
 ### Tests
-- [ ] Schema validation tests for valid/invalid AI outputs.
-- [ ] Backend tests ensuring optional board update applies only when valid.
-- [ ] Conversation-history tests confirming prior turns are included.
+- [x] Schema validation tests for valid/invalid AI outputs.
+- [x] Backend tests ensuring optional board update applies only when valid.
+- [x] Conversation-history tests confirming prior turns are included.
 
 ### Success criteria
-- [ ] AI responses are machine-parseable and safe to apply.
-- [ ] Board mutation happens only through validated structured output.
+- [x] AI responses are machine-parseable and safe to apply.
+- [x] Board mutation happens only through validated structured output.
 
 ## Part 10: Frontend AI Sidebar
 

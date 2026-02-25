@@ -2,12 +2,13 @@
 
 ## Current purpose
 
-This backend currently provides Part 6 behavior:
+This backend currently provides Part 9 behavior:
 - FastAPI application with a modular router structure.
 - API smoke endpoints under `/api`.
 - Cookie-session auth endpoints under `/api/auth`.
 - SQLite-backed board persistence via `/api/board`.
 - OpenRouter connectivity endpoint via `/api/ai/connectivity`.
+- Structured AI board-action endpoint via `/api/ai/board-action`.
 - Exported Next.js frontend served from `/`.
 - Fallback static smoke page for non-container local resilience.
 
@@ -35,6 +36,7 @@ This backend currently provides Part 6 behavior:
 		- `GET /api/board`
 		- `PUT /api/board`
 		- `POST /api/ai/connectivity`
+		- `POST /api/ai/board-action`
 		- `GET /api/health`
 		- `GET /api/hello`
 - `app/frontend_static/` (container runtime)
@@ -42,7 +44,7 @@ This backend currently provides Part 6 behavior:
 - `app/static/index.html`
 	- Kept as fallback smoke page when exported frontend is not present.
 - `tests/test_smoke.py`
-	- FastAPI TestClient coverage for root, auth, board persistence, and API endpoints.
+	- FastAPI TestClient coverage for root, auth, board persistence, connectivity, and structured AI board-action endpoints.
 
 ## Dependency management
 
@@ -58,5 +60,5 @@ This backend currently provides Part 6 behavior:
 ## Notes for next phases
 
 - Part 3 integration is complete via Docker multi-stage build.
-- Part 4 auth and Part 6 board persistence are complete.
-- Next phases add frontend/backend board integration and AI functionality.
+- Part 4 auth, Part 6 persistence, Part 7 integration, and Part 9 structured AI backend are complete.
+- Part 10 will add UI chat wiring to the structured AI backend.

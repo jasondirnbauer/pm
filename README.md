@@ -57,6 +57,7 @@ From `frontend/`:
 ```bash
 npm run test:unit
 npm run test:e2e
+npm run test:e2e:integration
 ```
 
 From project root:
@@ -64,6 +65,19 @@ From project root:
 ```bash
 docker compose exec pm-app sh -lc "PYTHONPATH=/app/backend uv run --with pytest --with httpx pytest"
 ```
+
+### AI connectivity check (PowerShell)
+
+```powershell
+$s = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+Invoke-WebRequest http://localhost:8000/api/auth/login -Method Post -WebSession $s -ContentType 'application/json' -Body '{"username":"user","password":"password"}' | Out-Null
+$result = Invoke-WebRequest http://localhost:8000/api/ai/connectivity -Method Post -WebSession $s -ContentType 'application/json' -Body '{"prompt":"2+2"}'
+$result.Content
+```
+
+Expected response includes:
+- `"model":"openai/gpt-oss-120b"`
+- `"response":"4"`
 
 ### Optional API auth check (PowerShell)
 

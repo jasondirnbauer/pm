@@ -15,7 +15,7 @@ test("persists edited card after reload", async ({ page }) => {
   const marker = `persist-edit-${Date.now()}`;
   const card = page.getByTestId("card-card-1");
 
-  await card.getByRole("button", { name: /edit/i }).click();
+  await card.getByRole("button", { name: "Edit" }).click();
   await card.getByLabel("Card title").fill(marker);
   await card.getByRole("button", { name: /save/i }).click();
 

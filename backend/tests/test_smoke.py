@@ -241,3 +241,121 @@ def test_ai_connectivity_request_error_returns_502(monkeypatch) -> None:
 
         response = client.post("/api/ai/connectivity", json={"prompt": "2+2"})
         assert response.status_code == 502
+
+
+def test_ai_board_action_rejects_invalid_json(monkeypatch) -> None:
+    monkeypatch.setattr("app.routers.ai.query_openrouter", lambda _: "not-json")
+
+    with TestClient(create_app()) as client:
+        client.post(
+            "/api/auth/login",
+            json={"username": "user", "password": "password"},
+        )
+
+        response = client.post(
+            "/api/ai/board-action",
+            json={"question": "What should I do next?", "conversation_history": []},
+        )
+        assert response.status_code == 502
+
+
+def test_ai_board_action_without_board_update(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "app.routers.ai.query_openrouter",
+        lambda _: '{"assistant_response":"No board change needed.","board_update":null}',
+    )
+
+    with TestClient(create_app()) as client:
+        client.post(
+            "/api/auth/login",
+            json={"username": "user", "password": "password"},
+        )
+
+        before = client.get("/api/board").json()
+        response = client.post(
+            "/api/ai/board-action",
+            json={"question": "Summarize the board", "conversation_history": []},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["assistant_response"] == "No board change needed."
+        assert payload["board_updated"] is False
+
+        after = client.get("/api/board").json()
+        assert after == before
+
+
+def test_ai_board_action_with_board_update_persists(monkeypatch) -> None:
+    def fake_query(prompt: str) -> str:
+        return (
+            '{"assistant_response":"Updated board.",'
+            '"board_update":{'
+            '"columns":[{"id":"col-backlog","title":"Backlog","cardIds":["card-1","card-2"]},'
+            '{"id":"col-discovery","title":"Discovery","cardIds":["card-3"]},'
+            '{"id":"col-progress","title":"In Progress","cardIds":["card-4","card-5"]},'
+            '{"id":"col-review","title":"Review","cardIds":["card-6"]},'
+            '{"id":"col-done","title":"Done","cardIds":["card-7","card-8"]}],'
+            '"cards":{'
+            '"card-1":{"id":"card-1","title":"AI Updated Title","details":"Draft quarterly themes with impact statements and metrics."},'
+            '"card-2":{"id":"card-2","title":"Gather customer signals","details":"Review support tags, sales notes, and churn feedback."},'
+            '"card-3":{"id":"card-3","title":"Prototype analytics view","details":"Sketch initial dashboard layout and key drill-downs."},'
+            '"card-4":{"id":"card-4","title":"Refine status language","details":"Standardize column labels and tone across the board."},'
+            '"card-5":{"id":"card-5","title":"Design card layout","details":"Add hierarchy and spacing for scanning dense lists."},'
+            '"card-6":{"id":"card-6","title":"QA micro-interactions","details":"Verify hover, focus, and loading states."},'
+            '"card-7":{"id":"card-7","title":"Ship marketing page","details":"Final copy approved and asset pack delivered."},'
+            '"card-8":{"id":"card-8","title":"Close onboarding sprint","details":"Document release notes and share internally."}'
+            '}}}'
+        )
+
+    monkeypatch.setattr("app.routers.ai.query_openrouter", fake_query)
+
+    with TestClient(create_app()) as client:
+        client.post(
+            "/api/auth/login",
+            json={"username": "user", "password": "password"},
+        )
+
+        response = client.post(
+            "/api/ai/board-action",
+            json={"question": "Update title", "conversation_history": []},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["board_updated"] is True
+        assert payload["board"]["cards"]["card-1"]["title"] == "AI Updated Title"
+
+        persisted = client.get("/api/board").json()
+        assert persisted["cards"]["card-1"]["title"] == "AI Updated Title"
+
+
+def test_ai_board_action_includes_conversation_history(monkeypatch) -> None:
+    captured_prompt = {"value": ""}
+
+    def fake_query(prompt: str) -> str:
+        captured_prompt["value"] = prompt
+        return '{"assistant_response":"ok","board_update":null}'
+
+    monkeypatch.setattr("app.routers.ai.query_openrouter", fake_query)
+
+    with TestClient(create_app()) as client:
+        client.post(
+            "/api/auth/login",
+            json={"username": "user", "password": "password"},
+        )
+
+        response = client.post(
+            "/api/ai/board-action",
+            json={
+                "question": "What next?",
+                "conversation_history": [
+                    {"role": "user", "content": "We need momentum."},
+                    {"role": "assistant", "content": "Focus on review."},
+                ],
+            },
+        )
+
+        assert response.status_code == 200
+        assert "We need momentum." in captured_prompt["value"]
+        assert "Focus on review." in captured_prompt["value"]
