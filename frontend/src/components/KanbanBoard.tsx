@@ -2,11 +2,13 @@
 
 import { useMemo, useState } from "react";
 import {
+  pointerWithin,
   DndContext,
   DragOverlay,
   PointerSensor,
   useSensor,
   useSensors,
+  type CollisionDetection,
   closestCorners,
   type DragEndEvent,
   type DragStartEvent,
@@ -24,6 +26,35 @@ export const KanbanBoard = () => {
       activationConstraint: { distance: 6 },
     })
   );
+
+  const collisionDetection: CollisionDetection = (args) => {
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      const pointerY = args.pointerCoordinates?.y;
+      const cardCollisions = pointerCollisions.filter((collision) =>
+        String(collision.id).startsWith("card-")
+      );
+
+      if (pointerY !== undefined && cardCollisions.length > 0) {
+        return [...cardCollisions].sort((left, right) => {
+          const leftRect = args.droppableRects.get(left.id);
+          const rightRect = args.droppableRects.get(right.id);
+
+          if (!leftRect || !rightRect) {
+            return 0;
+          }
+
+          const leftCenterY = (leftRect.top + leftRect.bottom) / 2;
+          const rightCenterY = (rightRect.top + rightRect.bottom) / 2;
+
+          return Math.abs(leftCenterY - pointerY) - Math.abs(rightCenterY - pointerY);
+        });
+      }
+
+      return pointerCollisions;
+    }
+    return closestCorners(args);
+  };
 
   const cardsById = useMemo(() => board.cards, [board.cards]);
 
@@ -149,7 +180,7 @@ export const KanbanBoard = () => {
 
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={collisionDetection}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
