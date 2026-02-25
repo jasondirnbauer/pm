@@ -49,19 +49,19 @@ Scope assumptions locked in:
 ## Part 3: Serve Existing Frontend
 
 ### Checklist
-- [ ] Build frontend with static export configuration.
-- [ ] Copy exported frontend assets into backend-served static directory in container build.
-- [ ] Route `/` and static files through FastAPI static mount.
-- [ ] Keep frontend tests operational in `frontend/`.
+- [x] Build frontend with static export configuration.
+- [x] Copy exported frontend assets into backend-served static directory in container build.
+- [x] Route `/` and static files through FastAPI static mount.
+- [x] Keep frontend tests operational in `frontend/`.
 
 ### Tests
-- [ ] Frontend unit tests: `npm run test:unit`.
-- [ ] Frontend e2e tests: `npm run test:e2e` against served app.
-- [ ] Container smoke test: `/` shows Kanban board UI.
+- [x] Frontend unit tests: `npm run test:unit`.
+- [x] Frontend e2e tests: `npm run test:e2e` against served app.
+- [x] Container smoke test: `/` shows Kanban board UI.
 
 ### Success criteria
-- [ ] Existing Kanban demo appears at `/` when running containerized app.
-- [ ] No regression in frontend test suite.
+- [x] Existing Kanban demo appears at `/` when running containerized app.
+- [x] No regression in frontend test suite.
 
 ## Part 4: Dummy Sign-In Flow
 

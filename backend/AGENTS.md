@@ -2,24 +2,26 @@
 
 ## Current purpose
 
-This backend currently provides Part 2 scaffold behavior:
+This backend currently provides Part 3 behavior:
 - FastAPI application with a modular router structure.
 - API smoke endpoints under `/api`.
-- Static HTML served from `/` by FastAPI.
+- Exported Next.js frontend served from `/`.
+- Fallback static smoke page for non-container local resilience.
 
 ## Structure
 
 - `app/main.py`
 	- App factory (`create_app`) and global `app`.
-	- Registers API router and static route mounting.
+	- Registers API router and mounts static frontend at `/`.
 - `app/routers/`
 	- API route modules.
 	- Current endpoints:
 		- `GET /api/health`
 		- `GET /api/hello`
+- `app/frontend_static/` (container runtime)
+	- Populated from Next.js `frontend/out` at image build time.
 - `app/static/index.html`
-	- Hello-world static page.
-	- Calls `/api/hello` in-browser to confirm API connectivity.
+	- Kept as fallback smoke page when exported frontend is not present.
 - `tests/test_smoke.py`
 	- FastAPI TestClient smoke tests for root and API endpoints.
 
@@ -36,6 +38,5 @@ This backend currently provides Part 2 scaffold behavior:
 
 ## Notes for next phases
 
-- This scaffold is intentionally minimal.
-- Part 3 will replace static hello page with statically built Next.js output.
+- Part 3 integration is complete via Docker multi-stage build.
 - Part 4+ will add auth, persistence, and AI endpoints.

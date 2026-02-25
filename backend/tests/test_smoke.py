@@ -24,4 +24,4 @@ def test_root_serves_static_html() -> None:
     response = client.get("/")
 
     assert response.status_code == 200
-    assert "Hello world scaffold is running" in response.text
+    assert "<html" in response.text.lower()
