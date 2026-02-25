@@ -120,19 +120,19 @@ Scope assumptions locked in:
 ## Part 7: Frontend + Backend Integration
 
 ### Checklist
-- [ ] Replace in-memory frontend board state bootstrapping with backend fetch.
-- [ ] Persist card/column edits and drag-drop moves through backend API.
-- [ ] Handle loading and API error states with minimal UX.
-- [ ] Ensure frontend remains static-export compatible.
+- [x] Replace in-memory frontend board state bootstrapping with backend fetch.
+- [x] Persist card/column edits and drag-drop moves through backend API.
+- [x] Handle loading and API error states with minimal UX.
+- [x] Ensure frontend remains static-export compatible.
 
 ### Tests
-- [ ] Unit tests for API client functions.
-- [ ] Component/integration tests with mocked backend responses.
-- [ ] E2E tests covering login, board load, edits, refresh persistence.
+- [x] Unit tests for API client functions.
+- [x] Component/integration tests with mocked backend responses.
+- [x] E2E tests covering login, board load, edits, refresh persistence.
 
 ### Success criteria
-- [ ] Board state is persistent and reload-safe.
-- [ ] Core interactions (rename/add/delete/move) function end-to-end.
+- [x] Board state is persistent and reload-safe.
+- [x] Core interactions (rename/add/delete/move) function end-to-end.
 
 ## Part 8: AI Connectivity (OpenRouter)
 
