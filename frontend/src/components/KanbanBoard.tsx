@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   pointerWithin,
   DndContext,
@@ -16,6 +16,8 @@ import {
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
 import { createId, initialData, moveCard, type BoardData } from "@/lib/kanban";
+
+const shouldUseBackendPersistence = process.env.NODE_ENV !== "test";
 
 export const KanbanBoard = () => {
   const [board, setBoard] = useState<BoardData>(() => initialData);
@@ -58,6 +60,55 @@ export const KanbanBoard = () => {
 
   const cardsById = useMemo(() => board.cards, [board.cards]);
 
+  const persistBoard = async (nextBoard: BoardData) => {
+    if (!shouldUseBackendPersistence) {
+      return;
+    }
+
+    await fetch("/api/board", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "same-origin",
+      body: JSON.stringify(nextBoard),
+    });
+  };
+
+  const applyBoardUpdate = (updater: (current: BoardData) => BoardData) => {
+    setBoard((current) => {
+      const nextBoard = updater(current);
+      void persistBoard(nextBoard);
+      return nextBoard;
+    });
+  };
+
+  useEffect(() => {
+    if (!shouldUseBackendPersistence) {
+      return;
+    }
+
+    const loadBoard = async () => {
+      try {
+        const response = await fetch("/api/board", {
+          method: "GET",
+          credentials: "same-origin",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as BoardData;
+        setBoard(payload);
+      } catch {
+        return;
+      }
+    };
+
+    void loadBoard();
+  }, []);
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveCardId(event.active.id as string);
   };
@@ -70,14 +121,14 @@ export const KanbanBoard = () => {
       return;
     }
 
-    setBoard((prev) => ({
+    applyBoardUpdate((prev) => ({
       ...prev,
       columns: moveCard(prev.columns, active.id as string, over.id as string),
     }));
   };
 
   const handleRenameColumn = (columnId: string, title: string) => {
-    setBoard((prev) => ({
+    applyBoardUpdate((prev) => ({
       ...prev,
       columns: prev.columns.map((column) =>
         column.id === columnId ? { ...column, title } : column
@@ -87,7 +138,7 @@ export const KanbanBoard = () => {
 
   const handleAddCard = (columnId: string, title: string, details: string) => {
     const id = createId("card");
-    setBoard((prev) => ({
+    applyBoardUpdate((prev) => ({
       ...prev,
       cards: {
         ...prev.cards,
@@ -102,7 +153,7 @@ export const KanbanBoard = () => {
   };
 
   const handleDeleteCard = (columnId: string, cardId: string) => {
-    setBoard((prev) => {
+    applyBoardUpdate((prev) => {
       return {
         ...prev,
         cards: Object.fromEntries(
@@ -121,7 +172,7 @@ export const KanbanBoard = () => {
   };
 
   const handleUpdateCard = (cardId: string, title: string, details: string) => {
-    setBoard((prev) => ({
+    applyBoardUpdate((prev) => ({
       ...prev,
       cards: {
         ...prev.cards,
