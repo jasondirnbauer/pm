@@ -8,9 +8,11 @@ RUN npm ci
 COPY frontend/ .
 RUN npm run build
 
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+FROM python:3.12-slim-bookworm
 
 WORKDIR /app/backend
+
+RUN pip install --no-cache-dir uv
 
 COPY backend/pyproject.toml ./pyproject.toml
 RUN uv sync --no-dev
