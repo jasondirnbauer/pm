@@ -143,7 +143,7 @@ export const AuthGate = () => {
 
   return (
     <div>
-      <div className="mx-auto flex w-full max-w-[1500px] justify-end px-6 pt-6">
+      <div className="mx-auto flex w-full max-w-[1920px] justify-end px-8 pt-4">
         <button
           type="button"
           onClick={handleLogout}

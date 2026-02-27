@@ -126,7 +126,7 @@ export const AIChatSidebar = ({ board, onBoardUpdate }: AIChatSidebarProps) => {
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
           placeholder="Ask the assistant..."
-          rows={4}
+          rows={3}
           className="w-full resize-none rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm text-[var(--navy-dark)] outline-none focus:border-[var(--primary-blue)]"
           aria-label="AI message"
         />
@@ -134,9 +134,9 @@ export const AIChatSidebar = ({ board, onBoardUpdate }: AIChatSidebarProps) => {
         <button
           type="submit"
           disabled={isSending}
-          className="w-full rounded-full bg-[var(--secondary-purple)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-white transition hover:brightness-110 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[var(--secondary-purple)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-white transition hover:brightness-110 disabled:opacity-60"
         >
-          {isSending ? "Sending..." : "Send"}
+          {isSending ? "Sending..." : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z" /><path d="m22 2-11 11" /></svg>Send</>}
         </button>
       </form>
     </aside>
