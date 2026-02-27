@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   pointerWithin,
   DndContext,
@@ -20,9 +20,20 @@ import { createId, initialData, moveCard, type BoardData } from "@/lib/kanban";
 
 const shouldUseBackendPersistence = process.env.NODE_ENV !== "test";
 
+// Debounce rapid edits so only the final state within this window is persisted
+const PERSIST_DEBOUNCE_MS = 300;
+// Abort stalled persistence requests after this timeout
+const PERSIST_TIMEOUT_MS = 10_000;
+
 export const KanbanBoard = () => {
   const [board, setBoard] = useState<BoardData>(() => initialData);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
+
+  // Mirrors board state so applyBoardUpdate can compute the next state
+  // synchronously without relying on the React state updater pattern.
+  const boardRef = useRef<BoardData>(initialData);
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -66,22 +77,52 @@ export const KanbanBoard = () => {
       return;
     }
 
-    await fetch("/api/board", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "same-origin",
-      body: JSON.stringify(nextBoard),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), PERSIST_TIMEOUT_MS);
+    try {
+      await fetch("/api/board", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin",
+        body: JSON.stringify(nextBoard),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
   };
 
-  const applyBoardUpdate = (updater: (current: BoardData) => BoardData) => {
-    setBoard((current) => {
-      const nextBoard = updater(current);
+  const schedulePersist = (nextBoard: BoardData) => {
+    if (persistTimerRef.current !== null) {
+      clearTimeout(persistTimerRef.current);
+    }
+    persistTimerRef.current = setTimeout(() => {
       void persistBoard(nextBoard);
-      return nextBoard;
-    });
+    }, PERSIST_DEBOUNCE_MS);
+  };
+
+  // Applies an update to the board state and keeps boardRef in sync.
+  // Pass { debounce: true } for high-frequency updates (e.g. typing a column
+  // rename) so rapid changes are coalesced. All other updates persist
+  // immediately to ensure changes survive a page reload.
+  const applyBoardUpdate = (
+    updater: (current: BoardData) => BoardData,
+    options: { debounce?: boolean } = {}
+  ) => {
+    const nextBoard = updater(boardRef.current);
+    boardRef.current = nextBoard;
+    setBoard(nextBoard);
+    if (options.debounce) {
+      schedulePersist(nextBoard);
+    } else {
+      if (persistTimerRef.current !== null) {
+        clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = null;
+      }
+      void persistBoard(nextBoard);
+    }
   };
 
   useEffect(() => {
@@ -97,13 +138,15 @@ export const KanbanBoard = () => {
         });
 
         if (!response.ok) {
+          setLoadError(true);
           return;
         }
 
         const payload = (await response.json()) as BoardData;
+        boardRef.current = payload;
         setBoard(payload);
       } catch {
-        return;
+        setLoadError(true);
       }
     };
 
@@ -134,7 +177,7 @@ export const KanbanBoard = () => {
       columns: prev.columns.map((column) =>
         column.id === columnId ? { ...column, title } : column
       ),
-    }));
+    }), { debounce: true });
   };
 
   const handleAddCard = (columnId: string, title: string, details: string) => {
@@ -189,6 +232,8 @@ export const KanbanBoard = () => {
   const activeCard = activeCardId ? cardsById[activeCardId] : null;
 
   const handleBoardUpdateFromAI = (nextBoard: BoardData) => {
+    // The backend already persisted this board — just sync local state.
+    boardRef.current = nextBoard;
     setBoard(nextBoard);
   };
 
@@ -198,6 +243,12 @@ export const KanbanBoard = () => {
       <div className="pointer-events-none absolute bottom-0 right-0 h-[520px] w-[520px] translate-x-1/4 translate-y-1/4 rounded-full bg-[radial-gradient(circle,_rgba(117,57,145,0.18)_0%,_rgba(117,57,145,0.05)_55%,_transparent_75%)]" />
 
       <main className="relative mx-auto flex min-h-screen max-w-[1500px] flex-col gap-10 px-6 pb-16 pt-12">
+        {loadError && (
+          <div className="rounded-xl border border-[var(--secondary-purple)] bg-white/80 px-4 py-2 text-sm text-[var(--secondary-purple)]">
+            Could not load latest board — showing cached data. Refresh to try again.
+          </div>
+        )}
+
         <header className="flex flex-col gap-6 rounded-[32px] border border-[var(--stroke)] bg-white/80 p-8 shadow-[var(--shadow)] backdrop-blur">
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div>

@@ -147,7 +147,7 @@ def ai_board_action(
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"AI structured output validation failed: {exc}",
+            detail="AI structured output validation failed",
         ) from exc
 
     if structured.board_update is not None:

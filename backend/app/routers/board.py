@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from app.db import get_or_create_board, update_board
 from app.routers.auth import require_authenticated_user
@@ -9,8 +9,8 @@ router = APIRouter()
 
 class CardPayload(BaseModel):
     id: str
-    title: str
-    details: str
+    title: str = Field(max_length=200)
+    details: str = Field(max_length=5000)
 
 
 class ColumnPayload(BaseModel):

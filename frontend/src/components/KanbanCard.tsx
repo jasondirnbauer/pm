@@ -42,12 +42,14 @@ export const KanbanCard = ({ card, onDelete, onUpdate }: KanbanCardProps) => {
             <input
               value={titleValue}
               onChange={(event) => setTitleValue(event.target.value)}
+              maxLength={200}
               className="w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm font-semibold text-[var(--navy-dark)] outline-none focus:border-[var(--primary-blue)]"
               aria-label="Card title"
             />
             <textarea
               value={detailsValue}
               onChange={(event) => setDetailsValue(event.target.value)}
+              maxLength={5000}
               className="w-full resize-none rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm text-[var(--gray-text)] outline-none focus:border-[var(--primary-blue)]"
               rows={3}
               aria-label="Card details"
@@ -86,7 +88,7 @@ export const KanbanCard = ({ card, onDelete, onUpdate }: KanbanCardProps) => {
                 {card.details}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-end gap-1">
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}

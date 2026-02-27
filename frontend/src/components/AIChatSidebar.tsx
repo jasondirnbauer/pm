@@ -58,11 +58,21 @@ export const AIChatSidebar = ({ board, onBoardUpdate }: AIChatSidebarProps) => {
       });
 
       if (!response.ok) {
-        const detail = await response.text();
-        throw new Error(detail || "AI request failed");
+        if (response.status === 401) {
+          setError("Session expired. Please log in again.");
+        } else {
+          const detail = await response.text();
+          setError(detail || "AI request failed.");
+        }
+        return;
       }
 
       const payload = (await response.json()) as AIBoardActionResponse;
+      if (typeof payload.assistant_response !== "string") {
+        setError("Unexpected response from AI. Please try again.");
+        return;
+      }
+
       setMessages((current) => [
         ...current,
         { role: "assistant", content: payload.assistant_response },
@@ -72,7 +82,7 @@ export const AIChatSidebar = ({ board, onBoardUpdate }: AIChatSidebarProps) => {
         onBoardUpdate(payload.board);
       }
     } catch {
-      setError("Unable to complete AI request.");
+      setError("Unable to connect. Please check your connection and try again.");
     } finally {
       setIsSending(false);
     }
