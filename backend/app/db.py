@@ -70,7 +70,6 @@ def _migrate_if_needed(connection: sqlite3.Connection) -> None:
     if "user_boards" not in tables or "users" in tables:
         return
 
-    # Old schema exists and new schema doesn't — migrate
     connection.execute(
         """
         CREATE TABLE users (
@@ -304,7 +303,6 @@ def get_default_board_for_user(user_id: int) -> dict:
             (user_id,),
         ).fetchone()
         if not row:
-            # Create a default board if none exists
             return create_board(user_id, "My Board")
         result = dict(row)
         result["board_json"] = json.loads(result["board_json"])

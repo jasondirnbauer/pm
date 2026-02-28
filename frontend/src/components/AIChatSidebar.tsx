@@ -28,7 +28,6 @@ export const AIChatSidebar = ({ board, boardId, onBoardUpdate }: AIChatSidebarPr
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Reset chat when switching boards
   useEffect(() => {
     setMessages([]);
     setPrompt("");

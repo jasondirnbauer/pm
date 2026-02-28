@@ -37,6 +37,26 @@ class StructuredBoardAction(BaseModel):
     board_update: BoardPayload | None
 
 
+def _call_openrouter(prompt: str) -> str:
+    try:
+        return query_openrouter(prompt)
+    except OpenRouterConfigurationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+    except OpenRouterTimeoutError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail=str(exc),
+        ) from exc
+    except OpenRouterRequestError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
+
+
 def _extract_json_block(text: str) -> str:
     stripped = text.strip()
     if stripped.startswith("```"):
@@ -50,10 +70,7 @@ def _build_board_action_prompt(
     question: str,
     conversation_history: list[ConversationTurn],
 ) -> str:
-    history_lines = []
-    for turn in conversation_history:
-        history_lines.append(f"{turn.role}: {turn.content}")
-
+    history_lines = [f"{turn.role}: {turn.content}" for turn in conversation_history]
     history_block = "\n".join(history_lines) if history_lines else "(none)"
 
     return (
@@ -77,29 +94,26 @@ def _build_board_action_prompt(
     )
 
 
+def _resolve_board(board_id: str | None, user_id: int) -> tuple[str, dict]:
+    if board_id:
+        board_record = get_board(board_id, user_id)
+        if not board_record:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Board not found",
+            )
+    else:
+        board_record = get_default_board_for_user(user_id)
+
+    return board_record["id"], board_record["board_json"]
+
+
 @router.post("/ai/connectivity")
 def ai_connectivity(
     payload: ConnectivityRequest,
     user: SessionUser = Depends(require_authenticated_user),
 ) -> dict:
-    try:
-        answer = query_openrouter(payload.prompt)
-    except OpenRouterConfigurationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(exc),
-        ) from exc
-    except OpenRouterTimeoutError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail=str(exc),
-        ) from exc
-    except OpenRouterRequestError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(exc),
-        ) from exc
-
+    answer = _call_openrouter(payload.prompt)
     return {
         "model": MODEL_NAME,
         "prompt": payload.prompt,
@@ -113,19 +127,7 @@ def ai_board_action(
     payload: BoardActionRequest,
     user: SessionUser = Depends(require_authenticated_user),
 ) -> dict:
-    if payload.board_id:
-        board_record = get_board(payload.board_id, user.user_id)
-        if not board_record:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Board not found",
-            )
-        current_board = board_record["board_json"]
-        board_id = payload.board_id
-    else:
-        board_record = get_default_board_for_user(user.user_id)
-        current_board = board_record["board_json"]
-        board_id = board_record["id"]
+    board_id, current_board = _resolve_board(payload.board_id, user.user_id)
 
     prompt = _build_board_action_prompt(
         board=current_board,
@@ -133,23 +135,7 @@ def ai_board_action(
         conversation_history=payload.conversation_history,
     )
 
-    try:
-        raw_response = query_openrouter(prompt)
-    except OpenRouterConfigurationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(exc),
-        ) from exc
-    except OpenRouterTimeoutError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail=str(exc),
-        ) from exc
-    except OpenRouterRequestError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(exc),
-        ) from exc
+    raw_response = _call_openrouter(prompt)
 
     try:
         parsed = json.loads(_extract_json_block(raw_response))

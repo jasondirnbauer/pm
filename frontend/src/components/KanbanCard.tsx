@@ -29,12 +29,16 @@ export const KanbanCard = ({ card, onDelete, onUpdate }: KanbanCardProps) => {
     transition,
   };
 
-  const handleStartEdit = () => {
+  const resetEditState = () => {
     setTitleValue(card.title);
     setDetailsValue(card.details);
     setLabels(card.labels ?? []);
     setDueDate(card.due_date ?? "");
     setPriority(card.priority ?? "none");
+  };
+
+  const handleStartEdit = () => {
+    resetEditState();
     setIsEditing(true);
   };
 
@@ -48,11 +52,7 @@ export const KanbanCard = ({ card, onDelete, onUpdate }: KanbanCardProps) => {
   };
 
   const handleCancel = () => {
-    setTitleValue(card.title);
-    setDetailsValue(card.details);
-    setLabels(card.labels ?? []);
-    setDueDate(card.due_date ?? "");
-    setPriority(card.priority ?? "none");
+    resetEditState();
     setIsEditing(false);
   };
 
@@ -106,7 +106,6 @@ export const KanbanCard = ({ card, onDelete, onUpdate }: KanbanCardProps) => {
               aria-label="Card details"
             />
 
-            {/* Priority */}
             <div>
               <span className="block text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--gray-text)] mb-1">Priority</span>
               <select
@@ -121,7 +120,6 @@ export const KanbanCard = ({ card, onDelete, onUpdate }: KanbanCardProps) => {
               </select>
             </div>
 
-            {/* Due Date */}
             <div>
               <span className="block text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--gray-text)] mb-1">Due Date</span>
               <input
@@ -133,7 +131,6 @@ export const KanbanCard = ({ card, onDelete, onUpdate }: KanbanCardProps) => {
               />
             </div>
 
-            {/* Labels */}
             <div>
               <span className="block text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--gray-text)] mb-1">Labels</span>
               <div className="flex flex-wrap gap-1 mb-2">
@@ -225,7 +222,6 @@ export const KanbanCard = ({ card, onDelete, onUpdate }: KanbanCardProps) => {
                 {card.details}
               </p>
 
-              {/* Labels display */}
               {card.labels && card.labels.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
                   {card.labels.map((label) => (
@@ -240,7 +236,6 @@ export const KanbanCard = ({ card, onDelete, onUpdate }: KanbanCardProps) => {
                 </div>
               )}
 
-              {/* Due date display */}
               {card.due_date && (
                 <p className={clsx(
                   "mt-1.5 text-[10px] font-semibold",

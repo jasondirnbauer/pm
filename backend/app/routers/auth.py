@@ -16,7 +16,6 @@ router = APIRouter()
 
 SESSION_COOKIE_NAME = "pm_session"
 
-# token -> {user_id, username, display_name}
 sessions: dict[str, dict] = {}
 
 
@@ -98,7 +97,6 @@ def register(payload: RegisterRequest, response: Response) -> dict:
     ).decode()
     user = create_user(payload.username, password_hash, payload.display_name)
 
-    # Create a default board for the new user
     create_board(user["id"], "My Board")
 
     _set_session_cookie(response, user)
@@ -141,7 +139,6 @@ def update_profile(payload: UpdateProfileRequest, request: Request) -> dict:
     user = require_authenticated_user(request)
     updated = update_user_display_name(user.user_id, payload.display_name)
 
-    # Update session cache
     session_token = request.cookies.get(SESSION_COOKIE_NAME)
     if session_token and session_token in sessions:
         sessions[session_token]["display_name"] = payload.display_name

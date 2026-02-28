@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   pointerWithin,
   DndContext,
@@ -38,7 +38,6 @@ import {
 const shouldUseBackendPersistence = process.env.NODE_ENV !== "test";
 
 const PERSIST_DEBOUNCE_MS = 300;
-const PERSIST_TIMEOUT_MS = 10_000;
 
 const COLUMN_COLORS = ["#209dd7", "#ecad0a", "#753991", "#22c55e", "#f97316"];
 
@@ -89,20 +88,11 @@ export const KanbanBoard = () => {
     return closestCorners(args);
   };
 
-  const cardsById = useMemo(() => board.cards, [board.cards]);
-
   const persistBoard = useCallback(async (nextBoard: BoardData) => {
     if (!shouldUseBackendPersistence || !activeBoardIdRef.current) {
       return;
     }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), PERSIST_TIMEOUT_MS);
-    try {
-      await updateBoardData(activeBoardIdRef.current, nextBoard);
-    } finally {
-      clearTimeout(timeout);
-    }
+    await updateBoardData(activeBoardIdRef.current, nextBoard);
   }, []);
 
   const schedulePersist = useCallback((nextBoard: BoardData) => {
@@ -132,7 +122,6 @@ export const KanbanBoard = () => {
     }
   }, [persistBoard, schedulePersist]);
 
-  // Load board list on mount
   useEffect(() => {
     if (!shouldUseBackendPersistence) {
       return;
@@ -155,7 +144,6 @@ export const KanbanBoard = () => {
     void load();
   }, []);
 
-  // Load active board data when activeBoardId changes
   useEffect(() => {
     if (!shouldUseBackendPersistence || !activeBoardId) {
       return;
@@ -185,9 +173,9 @@ export const KanbanBoard = () => {
 
   const handleCreateBoard = async (name: string) => {
     try {
-      const detail = await apiCreateBoard(name);
-      setBoardList((prev) => [...prev, { id: detail.id, name: detail.name, created_at: detail.created_at, updated_at: detail.updated_at }]);
-      setActiveBoardId(detail.id);
+      const { id, name: boardName, created_at, updated_at } = await apiCreateBoard(name);
+      setBoardList((prev) => [...prev, { id, name: boardName, created_at, updated_at }]);
+      setActiveBoardId(id);
     } catch {
       // ignore
     }
@@ -263,22 +251,17 @@ export const KanbanBoard = () => {
   };
 
   const handleDeleteCard = (columnId: string, cardId: string) => {
-    applyBoardUpdate((prev) => {
-      return {
-        ...prev,
-        cards: Object.fromEntries(
-          Object.entries(prev.cards).filter(([id]) => id !== cardId)
-        ),
-        columns: prev.columns.map((column) =>
-          column.id === columnId
-            ? {
-                ...column,
-                cardIds: column.cardIds.filter((id) => id !== cardId),
-              }
-            : column
-        ),
-      };
-    });
+    applyBoardUpdate((prev) => ({
+      ...prev,
+      cards: Object.fromEntries(
+        Object.entries(prev.cards).filter(([id]) => id !== cardId)
+      ),
+      columns: prev.columns.map((column) =>
+        column.id === columnId
+          ? { ...column, cardIds: column.cardIds.filter((id) => id !== cardId) }
+          : column
+      ),
+    }));
   };
 
   const handleUpdateCard = (cardId: string, title: string, details: string, extra?: { labels?: CardLabel[]; due_date?: string | null; priority?: CardPriority }) => {
@@ -290,13 +273,13 @@ export const KanbanBoard = () => {
           ...prev.cards[cardId],
           title: title.trim() || prev.cards[cardId].title,
           details: details.trim() || "No details yet.",
-          ...(extra ? extra : {}),
+          ...extra,
         },
       },
     }));
   };
 
-  const activeCard = activeCardId ? cardsById[activeCardId] : null;
+  const activeCard = activeCardId ? board.cards[activeCardId] : null;
 
   const handleBoardUpdateFromAI = (nextBoard: BoardData) => {
     boardRef.current = nextBoard;

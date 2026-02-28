@@ -185,13 +185,9 @@ export const AuthGate = () => {
               disabled={isSubmitting}
               className="w-full rounded-full bg-[var(--secondary-purple)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.15em] text-white transition hover:brightness-110 disabled:opacity-60"
             >
-              {isSubmitting
-                ? mode === "login"
-                  ? "Signing in..."
-                  : "Creating account..."
-                : mode === "login"
-                  ? "Sign in"
-                  : "Create account"}
+              {mode === "login"
+                ? (isSubmitting ? "Signing in..." : "Sign in")
+                : (isSubmitting ? "Creating account..." : "Create account")}
             </button>
           </form>
 

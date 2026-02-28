@@ -58,9 +58,6 @@ class BoardPayload(BaseModel):
         return self
 
 
-# ── Legacy single-board endpoints (backward compatibility) ───────────────
-
-
 @router.get("/board")
 def read_board(user: SessionUser = Depends(require_authenticated_user)) -> dict:
     board = get_default_board_for_user(user.user_id)
@@ -75,9 +72,6 @@ def write_board(
     board = get_default_board_for_user(user.user_id)
     result = update_board(board["id"], user.user_id, payload.model_dump())
     return result["board_json"]
-
-
-# ── Multi-board CRUD endpoints ───────────────────────────────────────────
 
 
 @router.get("/boards")
