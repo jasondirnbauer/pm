@@ -10,8 +10,8 @@ from app.ai_client import (
     OpenRouterTimeoutError,
     query_openrouter,
 )
-from app.db import get_or_create_board, update_board
-from app.routers.auth import require_authenticated_user
+from app.db import get_board, get_default_board_for_user, update_board
+from app.routers.auth import SessionUser, require_authenticated_user
 from app.routers.board import BoardPayload
 
 router = APIRouter()
@@ -29,6 +29,7 @@ class ConversationTurn(BaseModel):
 class BoardActionRequest(BaseModel):
     question: str
     conversation_history: list[ConversationTurn] = []
+    board_id: str | None = None
 
 
 class StructuredBoardAction(BaseModel):
@@ -63,10 +64,13 @@ def _build_board_action_prompt(
         '  "assistant_response": string,\n'
         '  "board_update": null | {\n'
         '    "columns": [{"id": string, "title": string, "cardIds": [string]}],\n'
-        '    "cards": {"card-id": {"id": string, "title": string, "details": string}}\n'
+        '    "cards": {"card-id": {"id": string, "title": string, "details": string, '
+        '"labels": [{"id": string, "text": string, "color": string}], '
+        '"due_date": string|null, "priority": "none"|"low"|"medium"|"high"|"urgent"}}\n'
         "  }\n"
         "}\n\n"
-        "If no board changes are needed, set board_update to null.\n\n"
+        "If no board changes are needed, set board_update to null.\n"
+        "Labels, due_date, and priority are optional on cards.\n\n"
         f"Current board JSON:\n{json.dumps(board, ensure_ascii=False)}\n\n"
         f"Conversation history:\n{history_block}\n\n"
         f"User question:\n{question}\n"
@@ -76,7 +80,7 @@ def _build_board_action_prompt(
 @router.post("/ai/connectivity")
 def ai_connectivity(
     payload: ConnectivityRequest,
-    username: str = Depends(require_authenticated_user),
+    user: SessionUser = Depends(require_authenticated_user),
 ) -> dict:
     try:
         answer = query_openrouter(payload.prompt)
@@ -100,16 +104,29 @@ def ai_connectivity(
         "model": MODEL_NAME,
         "prompt": payload.prompt,
         "response": answer,
-        "user": username,
+        "user": user.username,
     }
 
 
 @router.post("/ai/board-action")
 def ai_board_action(
     payload: BoardActionRequest,
-    username: str = Depends(require_authenticated_user),
+    user: SessionUser = Depends(require_authenticated_user),
 ) -> dict:
-    current_board = get_or_create_board(username)
+    if payload.board_id:
+        board_record = get_board(payload.board_id, user.user_id)
+        if not board_record:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Board not found",
+            )
+        current_board = board_record["board_json"]
+        board_id = payload.board_id
+    else:
+        board_record = get_default_board_for_user(user.user_id)
+        current_board = board_record["board_json"]
+        board_id = board_record["id"]
+
     prompt = _build_board_action_prompt(
         board=current_board,
         question=payload.question,
@@ -151,7 +168,8 @@ def ai_board_action(
         ) from exc
 
     if structured.board_update is not None:
-        next_board = update_board(username, structured.board_update.model_dump())
+        result = update_board(board_id, user.user_id, structured.board_update.model_dump())
+        next_board = result["board_json"]
         board_updated = True
     else:
         next_board = current_board

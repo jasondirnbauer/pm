@@ -23,7 +23,7 @@ describe("AIChatSidebar", () => {
       }),
     }) as unknown as typeof fetch;
 
-    render(<AIChatSidebar board={initialData} onBoardUpdate={onBoardUpdate} />);
+    render(<AIChatSidebar board={initialData} boardId="board-1" onBoardUpdate={onBoardUpdate} />);
 
     await userEvent.type(screen.getByLabelText("AI message"), "What should I do next?");
     await userEvent.click(screen.getByRole("button", { name: /send/i }));
@@ -60,13 +60,41 @@ describe("AIChatSidebar", () => {
       }),
     }) as unknown as typeof fetch;
 
-    render(<AIChatSidebar board={initialData} onBoardUpdate={onBoardUpdate} />);
+    render(<AIChatSidebar board={initialData} boardId="board-1" onBoardUpdate={onBoardUpdate} />);
 
     await userEvent.type(screen.getByLabelText("AI message"), "Update card 1");
     await userEvent.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => {
       expect(onBoardUpdate).toHaveBeenCalledWith(nextBoard);
+    });
+  });
+
+  it("sends board_id in the request body", async () => {
+    const onBoardUpdate = vi.fn();
+    let capturedBody: string | undefined;
+
+    global.fetch = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      capturedBody = init?.body as string;
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          assistant_response: "ok",
+          board: initialData,
+          board_updated: false,
+        }),
+      });
+    }) as unknown as typeof fetch;
+
+    render(<AIChatSidebar board={initialData} boardId="board-123" onBoardUpdate={onBoardUpdate} />);
+
+    await userEvent.type(screen.getByLabelText("AI message"), "test");
+    await userEvent.click(screen.getByRole("button", { name: /send/i }));
+
+    await waitFor(() => {
+      expect(capturedBody).toBeDefined();
+      const body = JSON.parse(capturedBody!);
+      expect(body.board_id).toBe("board-123");
     });
   });
 });

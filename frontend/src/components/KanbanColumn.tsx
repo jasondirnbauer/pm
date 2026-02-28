@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import type { Card, Column } from "@/lib/kanban";
+import type { Card, CardLabel, CardPriority, Column } from "@/lib/kanban";
 import { KanbanCard } from "@/components/KanbanCard";
 import { NewCardForm } from "@/components/NewCardForm";
 
@@ -12,7 +12,7 @@ type KanbanColumnProps = {
   onRename: (columnId: string, title: string) => void;
   onAddCard: (columnId: string, title: string, details: string) => void;
   onDeleteCard: (columnId: string, cardId: string) => void;
-  onUpdateCard: (cardId: string, title: string, details: string) => void;
+  onUpdateCard: (cardId: string, title: string, details: string, extra?: { labels?: CardLabel[]; due_date?: string | null; priority?: CardPriority }) => void;
 };
 
 export const KanbanColumn = ({

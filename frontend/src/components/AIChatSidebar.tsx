@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import type { BoardData } from "@/lib/kanban";
 
 type ChatRole = "user" | "assistant";
@@ -12,6 +12,7 @@ type ChatMessage = {
 
 type AIChatSidebarProps = {
   board: BoardData;
+  boardId: string | null;
   onBoardUpdate: (nextBoard: BoardData) => void;
 };
 
@@ -21,11 +22,18 @@ type AIBoardActionResponse = {
   board_updated: boolean;
 };
 
-export const AIChatSidebar = ({ board, onBoardUpdate }: AIChatSidebarProps) => {
+export const AIChatSidebar = ({ board, boardId, onBoardUpdate }: AIChatSidebarProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [prompt, setPrompt] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Reset chat when switching boards
+  useEffect(() => {
+    setMessages([]);
+    setPrompt("");
+    setError(null);
+  }, [boardId]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -53,7 +61,7 @@ export const AIChatSidebar = ({ board, onBoardUpdate }: AIChatSidebarProps) => {
             role: message.role,
             content: message.content,
           })),
-          board,
+          board_id: boardId,
         }),
       });
 
@@ -100,7 +108,7 @@ export const AIChatSidebar = ({ board, onBoardUpdate }: AIChatSidebarProps) => {
       <div className="mt-4 flex-1 space-y-3 overflow-auto rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-3">
         {messages.length === 0 ? (
           <p className="text-sm text-[var(--gray-text)]">
-            Try: "Move a card from Backlog to Review and explain why."
+            Try: &quot;Move a card from Backlog to Review and explain why.&quot;
           </p>
         ) : (
           messages.map((message, index) => (

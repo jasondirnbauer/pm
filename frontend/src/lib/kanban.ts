@@ -1,7 +1,18 @@
+export type CardLabel = {
+  id: string;
+  text: string;
+  color: string;
+};
+
+export type CardPriority = "none" | "low" | "medium" | "high" | "urgent";
+
 export type Card = {
   id: string;
   title: string;
   details: string;
+  labels?: CardLabel[];
+  due_date?: string | null;
+  priority?: CardPriority;
 };
 
 export type Column = {
@@ -13,6 +24,17 @@ export type Column = {
 export type BoardData = {
   columns: Column[];
   cards: Record<string, Card>;
+};
+
+export type BoardSummary = {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BoardDetail = BoardSummary & {
+  board_json: BoardData;
 };
 
 export const initialData: BoardData = {
@@ -163,4 +185,25 @@ export const moveCard = (
 
 export const createId = (prefix: string) => {
   return `${prefix}-${crypto.randomUUID()}`;
+};
+
+export const LABEL_COLORS = [
+  "#209dd7",
+  "#753991",
+  "#ecad0a",
+  "#22c55e",
+  "#f97316",
+  "#ef4444",
+  "#888888",
+];
+
+export const PRIORITY_CONFIG: Record<
+  CardPriority,
+  { label: string; color: string }
+> = {
+  none: { label: "None", color: "#888888" },
+  low: { label: "Low", color: "#209dd7" },
+  medium: { label: "Medium", color: "#ecad0a" },
+  high: { label: "High", color: "#f97316" },
+  urgent: { label: "Urgent", color: "#ef4444" },
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   pointerWithin,
   DndContext,
@@ -14,15 +14,30 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { AIChatSidebar } from "@/components/AIChatSidebar";
+import { BoardSelector } from "@/components/BoardSelector";
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
-import { createId, initialData, moveCard, type BoardData } from "@/lib/kanban";
+import {
+  createId,
+  initialData,
+  moveCard,
+  type BoardData,
+  type BoardSummary,
+  type CardLabel,
+  type CardPriority,
+} from "@/lib/kanban";
+import {
+  fetchBoards,
+  fetchBoard,
+  createBoard as apiCreateBoard,
+  updateBoardData,
+  renameBoard as apiRenameBoard,
+  deleteBoard as apiDeleteBoard,
+} from "@/lib/api";
 
 const shouldUseBackendPersistence = process.env.NODE_ENV !== "test";
 
-// Debounce rapid edits so only the final state within this window is persisted
 const PERSIST_DEBOUNCE_MS = 300;
-// Abort stalled persistence requests after this timeout
 const PERSIST_TIMEOUT_MS = 10_000;
 
 const COLUMN_COLORS = ["#209dd7", "#ecad0a", "#753991", "#22c55e", "#f97316"];
@@ -32,10 +47,12 @@ export const KanbanBoard = () => {
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
 
-  // Mirrors board state so applyBoardUpdate can compute the next state
-  // synchronously without relying on the React state updater pattern.
+  const [boardList, setBoardList] = useState<BoardSummary[]>([]);
+  const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
+
   const boardRef = useRef<BoardData>(initialData);
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeBoardIdRef = useRef<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -74,42 +91,30 @@ export const KanbanBoard = () => {
 
   const cardsById = useMemo(() => board.cards, [board.cards]);
 
-  const persistBoard = async (nextBoard: BoardData) => {
-    if (!shouldUseBackendPersistence) {
+  const persistBoard = useCallback(async (nextBoard: BoardData) => {
+    if (!shouldUseBackendPersistence || !activeBoardIdRef.current) {
       return;
     }
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), PERSIST_TIMEOUT_MS);
     try {
-      await fetch("/api/board", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "same-origin",
-        body: JSON.stringify(nextBoard),
-        signal: controller.signal,
-      });
+      await updateBoardData(activeBoardIdRef.current, nextBoard);
     } finally {
       clearTimeout(timeout);
     }
-  };
+  }, []);
 
-  const schedulePersist = (nextBoard: BoardData) => {
+  const schedulePersist = useCallback((nextBoard: BoardData) => {
     if (persistTimerRef.current !== null) {
       clearTimeout(persistTimerRef.current);
     }
     persistTimerRef.current = setTimeout(() => {
       void persistBoard(nextBoard);
     }, PERSIST_DEBOUNCE_MS);
-  };
+  }, [persistBoard]);
 
-  // Applies an update to the board state and keeps boardRef in sync.
-  // Pass { debounce: true } for high-frequency updates (e.g. typing a column
-  // rename) so rapid changes are coalesced. All other updates persist
-  // immediately to ensure changes survive a page reload.
-  const applyBoardUpdate = (
+  const applyBoardUpdate = useCallback((
     updater: (current: BoardData) => BoardData,
     options: { debounce?: boolean } = {}
   ) => {
@@ -125,35 +130,94 @@ export const KanbanBoard = () => {
       }
       void persistBoard(nextBoard);
     }
-  };
+  }, [persistBoard, schedulePersist]);
 
+  // Load board list on mount
   useEffect(() => {
     if (!shouldUseBackendPersistence) {
       return;
     }
 
-    const loadBoard = async () => {
+    const load = async () => {
       try {
-        const response = await fetch("/api/board", {
-          method: "GET",
-          credentials: "same-origin",
-        });
-
-        if (!response.ok) {
-          setLoadError(true);
-          return;
+        const boards = await fetchBoards();
+        setBoardList(boards);
+        if (boards.length > 0) {
+          const firstId = boards[0].id;
+          setActiveBoardId(firstId);
+          activeBoardIdRef.current = firstId;
         }
-
-        const payload = (await response.json()) as BoardData;
-        boardRef.current = payload;
-        setBoard(payload);
       } catch {
         setLoadError(true);
       }
     };
 
-    void loadBoard();
+    void load();
   }, []);
+
+  // Load active board data when activeBoardId changes
+  useEffect(() => {
+    if (!shouldUseBackendPersistence || !activeBoardId) {
+      return;
+    }
+
+    activeBoardIdRef.current = activeBoardId;
+
+    const load = async () => {
+      try {
+        const detail = await fetchBoard(activeBoardId);
+        boardRef.current = detail.board_json;
+        setBoard(detail.board_json);
+        setLoadError(false);
+      } catch {
+        setLoadError(true);
+      }
+    };
+
+    void load();
+  }, [activeBoardId]);
+
+  const handleSelectBoard = (boardId: string) => {
+    if (boardId !== activeBoardId) {
+      setActiveBoardId(boardId);
+    }
+  };
+
+  const handleCreateBoard = async (name: string) => {
+    try {
+      const detail = await apiCreateBoard(name);
+      setBoardList((prev) => [...prev, { id: detail.id, name: detail.name, created_at: detail.created_at, updated_at: detail.updated_at }]);
+      setActiveBoardId(detail.id);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleRenameBoard = async (boardId: string, name: string) => {
+    try {
+      await apiRenameBoard(boardId, name);
+      setBoardList((prev) =>
+        prev.map((b) => (b.id === boardId ? { ...b, name } : b))
+      );
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleDeleteBoard = async (boardId: string) => {
+    try {
+      await apiDeleteBoard(boardId);
+      setBoardList((prev) => {
+        const next = prev.filter((b) => b.id !== boardId);
+        if (activeBoardId === boardId && next.length > 0) {
+          setActiveBoardId(next[0].id);
+        }
+        return next;
+      });
+    } catch {
+      // ignore
+    }
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveCardId(event.active.id as string);
@@ -217,7 +281,7 @@ export const KanbanBoard = () => {
     });
   };
 
-  const handleUpdateCard = (cardId: string, title: string, details: string) => {
+  const handleUpdateCard = (cardId: string, title: string, details: string, extra?: { labels?: CardLabel[]; due_date?: string | null; priority?: CardPriority }) => {
     applyBoardUpdate((prev) => ({
       ...prev,
       cards: {
@@ -226,6 +290,7 @@ export const KanbanBoard = () => {
           ...prev.cards[cardId],
           title: title.trim() || prev.cards[cardId].title,
           details: details.trim() || "No details yet.",
+          ...(extra ? extra : {}),
         },
       },
     }));
@@ -234,10 +299,11 @@ export const KanbanBoard = () => {
   const activeCard = activeCardId ? cardsById[activeCardId] : null;
 
   const handleBoardUpdateFromAI = (nextBoard: BoardData) => {
-    // The backend already persisted this board — just sync local state.
     boardRef.current = nextBoard;
     setBoard(nextBoard);
   };
+
+  const activeBoardName = boardList.find((b) => b.id === activeBoardId)?.name ?? "Kanban Studio";
 
   return (
     <div className="relative overflow-hidden">
@@ -251,30 +317,42 @@ export const KanbanBoard = () => {
           </div>
         )}
 
-        <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--stroke)] bg-white/80 px-6 py-4 shadow-[var(--shadow)] backdrop-blur">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--gray-text)]">
-              Single Board Kanban
-            </p>
-            <h1 className="font-display text-2xl font-semibold text-[var(--navy-dark)]">
-              Kanban Studio
-            </h1>
-          </div>
-          <div className="flex flex-wrap items-center gap-4">
-            {board.columns.map((column, index) => (
-              <span
-                key={column.id}
-                className="flex items-center gap-1.5 text-xs font-medium text-[var(--gray-text)]"
-              >
+        <header className="flex flex-col gap-4 rounded-2xl border border-[var(--stroke)] bg-white/80 px-6 py-4 shadow-[var(--shadow)] backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--gray-text)]">
+                Project Management
+              </p>
+              <h1 className="font-display text-2xl font-semibold text-[var(--navy-dark)]">
+                {activeBoardName}
+              </h1>
+            </div>
+            <div className="flex flex-wrap items-center gap-4">
+              {board.columns.map((column, index) => (
                 <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: COLUMN_COLORS[index % COLUMN_COLORS.length] }}
-                />
-                <span className="text-[var(--navy-dark)]">{column.title}</span>
-                <span className="text-[10px]">{column.cardIds.length}</span>
-              </span>
-            ))}
+                  key={column.id}
+                  className="flex items-center gap-1.5 text-xs font-medium text-[var(--gray-text)]"
+                >
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: COLUMN_COLORS[index % COLUMN_COLORS.length] }}
+                  />
+                  <span className="text-[var(--navy-dark)]">{column.title}</span>
+                  <span className="text-[10px]">{column.cardIds.length}</span>
+                </span>
+              ))}
+            </div>
           </div>
+          {boardList.length > 0 && (
+            <BoardSelector
+              boards={boardList}
+              activeBoardId={activeBoardId}
+              onSelectBoard={handleSelectBoard}
+              onCreateBoard={handleCreateBoard}
+              onRenameBoard={handleRenameBoard}
+              onDeleteBoard={handleDeleteBoard}
+            />
+          )}
         </header>
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -309,7 +387,11 @@ export const KanbanBoard = () => {
             </DragOverlay>
           </DndContext>
 
-          <AIChatSidebar board={board} onBoardUpdate={handleBoardUpdateFromAI} />
+          <AIChatSidebar
+            board={board}
+            boardId={activeBoardId}
+            onBoardUpdate={handleBoardUpdateFromAI}
+          />
         </div>
       </main>
     </div>
